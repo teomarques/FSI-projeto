@@ -2,9 +2,7 @@
 
 echo "A iniciar a configuracao da Firewall..."
 
-# ==============================================================================
-# 1. DEFINICAO DE VARIAVEIS (Baseado na Figura 1)
-# ==============================================================================
+# 1. DEFINICAO DE VARIAVEIS 
 # Interfaces de Rede
 IF_EXT="ens33"      # Internet (IP Externo Firewall: 87.248.214.97)
 IF_DMZ="ens36"      # DMZ (IP Router: 23.214.219.254)
@@ -34,19 +32,14 @@ IP_DATASTORE="192.168.10.11"
 IP_DNS2="193.137.16.75"
 IP_EDEN="193.136.212.1"
 
-# ==============================================================================
-# 2. CARREGAR MODULOS DO KERNEL (O "Truque" do FTP)
-# ==============================================================================
-# O FTP usa portas dinamicas para dados. Este modulo diz ao IPTables para 
-# ler os pacotes de controlo e abrir as portas de dados automaticamente.
+# 2. CARREGAR MODULOS DO KERNEL 
+# O FTP usa portas dinamicas para dados. Este modulo diz ao IPTables para ler os pacotes de controlo e abrir as portas de dados automaticamente.
 modprobe nf_conntrack_ftp
 
 # Ativar IP Forwarding (Garantir que o Linux atua como Router)
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
-# ==============================================================================
 # 3. LIMPEZA E POLITICAS POR DEFEITO (DROP)
-# ==============================================================================
 iptables -F
 iptables -X
 iptables -t nat -F
@@ -66,9 +59,7 @@ iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# ==============================================================================
 # 4. PROTEGER O ROUTER (INPUT / OUTPUT)
-# ==============================================================================
 # Autorizar pedidos de resolucao de nomes (DNS) enviados para o exterior
 iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
@@ -77,9 +68,7 @@ iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
 iptables -A INPUT -p tcp -s $NET_INT --dport 22 -j ACCEPT
 iptables -A INPUT -p tcp -s $IP_VPN_GW --dport 22 -j ACCEPT
 
-# ==============================================================================
-# 5. COMUNICACOES DIRETAS (SEM NAT) -> FORWARD
-# ==============================================================================
+# 5. COMUNICACOES DIRETAS (SEM NAT), FORWARD
 # DNS (Resolucao de nomes do dns server para a Internet e sincronizacao)
 iptables -A FORWARD -p udp -s $IP_DNS --dport 53 -j ACCEPT
 iptables -A FORWARD -p tcp -s $IP_DNS --dport 53 -j ACCEPT
@@ -101,9 +90,7 @@ iptables -A FORWARD -p udp -d $IP_VPN_GW --dport 1194 -j ACCEPT
 # Clientes VPN para a Rede Interna (Assumindo que o vpn-gw faz SNAT)
 iptables -A FORWARD -s $IP_VPN_GW -d $NET_INT -j ACCEPT
 
-# ==============================================================================
 # 6. LIGACOES DO EXTERIOR PARA O ROUTER (DNAT)
-# ==============================================================================
 # FTP (Activo e Passivo) para o servidor ftp interno
 iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT --dport 21 -j DNAT --to-destination $IP_FTP
 iptables -A FORWARD -p tcp -d $IP_FTP --dport 21 -j ACCEPT
@@ -114,9 +101,7 @@ iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT -s $IP_EDEN --dport 22 -j
 iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT -s $IP_DNS2 --dport 22 -j DNAT --to-destination $IP_DATASTORE
 iptables -A FORWARD -p tcp -d $IP_DATASTORE --dport 22 -j ACCEPT
 
-# ==============================================================================
 # 7. COMUNICACOES DA REDE INTERNA PARA O EXTERIOR (SNAT)
-# ==============================================================================
 # Mascarar os pacotes da rede interna a sair para a Internet (NAT)
 iptables -t nat -A POSTROUTING -s $NET_INT -o $IF_EXT -j SNAT --to-source $IP_ROUTER_EXT
 
@@ -124,4 +109,27 @@ iptables -t nat -A POSTROUTING -s $NET_INT -o $IF_EXT -j SNAT --to-source $IP_RO
 iptables -A FORWARD -s $NET_INT -o $IF_EXT -p udp --dport 53 -j ACCEPT
 iptables -A FORWARD -s $NET_INT -o $IF_EXT -p tcp -m multiport --dports 53,80,443,22,21 -j ACCEPT
 
+
+# Integração com Suricata via NFQUEUE
+# Cria uma chain para inspeção profunda de pacotes
+iptables -N SURICATA_INSPECT 2>/dev/null || iptables -F SURICATA_INSPECT
+
+# Envia tráfego HTTP e HTTPS para o Suricata analisar
+iptables -A SURICATA_INSPECT -p tcp --dport 80 -j NFQUEUE --queue-num 0
+iptables -A SURICATA_INSPECT -p tcp --dport 443 -j NFQUEUE --queue-num 0
+
+# Insere a chain no início do FORWARD para inspecionar tráfego entre redes
+iptables -I FORWARD 1 -j SURICATA_INSPECT
+
+# 8. INTEGRAÇÃO SURICATA IPS (NFQUEUE)
+# Criar chain para inspeção Suricata
+iptables -N SURICATA_INSPECT 2>/dev/null || iptables -F SURICATA_INSPECT
+
+# Enviar tráfego HTTP e HTTPS para o Suricata analisar
+iptables -A SURICATA_INSPECT -p tcp --dport 80 -j NFQUEUE --queue-num 0
+iptables -A SURICATA_INSPECT -p tcp --dport 443 -j NFQUEUE --queue-num 0
+
+# Inserir chain no início do FORWARD para inspecionar tráfego entre redes
+iptables -I FORWARD 1 -j SURICATA_INSPECT
 echo "Configuracao de Firewall e NAT concluida!"
+
