@@ -1,127 +1,237 @@
 #!/bin/bash
-
 echo "A iniciar a configuracao da Firewall..."
 
-# ==============================================================================
-# 1. DEFINICAO DE VARIAVEIS (Baseado na Figura 1)
-# ==============================================================================
-# Interfaces de Rede
-IF_EXT="ens33"      # Internet (IP Externo Firewall: 87.248.214.97)
-IF_DMZ="ens36"      # DMZ (IP Router: 23.214.219.254)
-IF_INT="ens37"      # Internal Network (IP Router: 192.168.10.254)
+#
+# 1. DEFINICAO DE VARIAVEIS
+# Interfaces
+IF_EXT="ens33"       # Internet/NAT  (IP externo: 87.248.214.97)
+IF_DMZ="ens36"       # DMZ           (IP router DMZ: 23.214.219.254)
+IF_INT="ens37"       # Rede Interna  (IP router INT: 192.168.10.254)
 
 # Redes
-NET_DMZ="23.214.219.128/25"
-NET_INT="192.168.10.0/24"
+NET_DMZ="23.214.219.128/25"   # Rede DMZ (IPs publicos — sem SNAT)
+NET_INT="192.168.10.0/24"     # Rede Interna (IPs privados — com SNAT)
 
-# IPs do Router
-IP_ROUTER_EXT="87.248.214.97"
-IP_ROUTER_DMZ="23.214.219.254"
-IP_ROUTER_INT="192.168.10.254"
+# IPs do router
+IP_ROUTER_EXT="87.248.214.97"    # IP externo da firewall (Internet)
+IP_ROUTER_DMZ="23.214.219.254"   # IP do router na DMZ
+IP_ROUTER_INT="192.168.10.254"   # IP do router na rede interna
 
-# Servidores na DMZ (IPs atribuidos manualmente dentro da sub-rede /25)
-IP_DNS="23.214.219.130"
-IP_SMTP="23.214.219.131"
-IP_MAIL="23.214.219.132"
-IP_WWW="23.214.219.133"
-IP_VPN_GW="23.214.219.134"
+# IPs dos servidores na DMZ
+IP_DNS="23.214.219.130"      # Servidor DNS
+IP_SMTP="23.214.219.131"     # Servidor SMTP
+IP_MAIL="23.214.219.132"     # Servidor de correio (POP/IMAP)
+IP_WWW="23.214.219.133"      # Servidor Web (HTTP/HTTPS)
+IP_VPN_GW="23.214.219.134"   # Gateway VPN (vpn-gw)
 
-# Servidores na Rede Interna (IPs atribuidos manualmente dentro da sub-rede /24)
-IP_FTP="192.168.10.10"
-IP_DATASTORE="192.168.10.11"
+# IPs dos servidores na Rede Interna
+IP_FTP="192.168.10.10"       # Servidor FTP
+IP_DATASTORE="192.168.10.11" # Servidor datastore
 
-# Servidores Externos (Internet)
-IP_DNS2="193.137.16.75"
-IP_EDEN="193.136.212.1"
+# IPs externos autorizados (Internet)
+IP_DNS2="193.137.16.75"      # Servidor DNS2 externo (dns.uminho.pt)
+IP_EDEN="193.136.212.1"      # Servidor eden externo
 
-# ==============================================================================
-# 2. CARREGAR MODULOS DO KERNEL (O "Truque" do FTP)
-# ==============================================================================
-# O FTP usa portas dinamicas para dados. Este modulo diz ao IPTables para 
-# ler os pacotes de controlo e abrir as portas de dados automaticamente.
+#
+# 2. MODULOS DO KERNEL
 modprobe nf_conntrack_ftp
+modprobe nfnetlink_queue
 
-# Ativar IP Forwarding (Garantir que o Linux atua como Router)
+# Activar IP Forwarding
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
-# ==============================================================================
-# 3. LIMPEZA E POLITICAS POR DEFEITO (DROP)
-# ==============================================================================
+#
+# 3. LIMPEZA E POLITICAS POR DEFEITO
+# Repor para ACCEPT antes de limpar (evita lock-out durante a execucao)
+iptables -P INPUT   ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT  ACCEPT
+
 iptables -F
 iptables -X
 iptables -t nat -F
 iptables -t nat -X
 
-# Definir politicas restritivas
-iptables -P INPUT DROP
+# Politicas restritivas por defeito
+iptables -P INPUT   DROP
 iptables -P FORWARD DROP
-iptables -P OUTPUT DROP
+iptables -P OUTPUT  DROP
 
-# Permitir Loopback
-iptables -A INPUT -i lo -j ACCEPT
-iptables -A OUTPUT -o lo -j ACCEPT
+#
+# 4. LOOPBACK E CONEXOES ESTABELECIDAS / RELACIONADAS
+iptables -A INPUT   -i lo -j ACCEPT
+iptables -A OUTPUT  -o lo -j ACCEPT
 
-# Permitir trafego de retorno para conexoes estabelecidas
-iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+# Trafego de conexoes ja estabelecidas ou relacionadas
+# Cobre respostas DNS, dados FTP passivo/activo (via nf_conntrack_ftp),
+# respostas ICMP de erro, etc.
+iptables -A INPUT   -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# ==============================================================================
-# 4. PROTEGER O ROUTER (INPUT / OUTPUT)
-# ==============================================================================
-# Autorizar pedidos de resolucao de nomes (DNS) enviados para o exterior
-iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
-iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+#
+# 5. SURICATA IPS (NFQUEUE)
+# Inserido no inicio do FORWARD para inspeccionar todo o trafego
+# antes de qualquer regra de ACCEPT.
+# --queue-bypass: fail-open se o Suricata nao estiver a correr.
+# Remover esta opcao para comportamento fail-closed (mais seguro).
+iptables -N SURICATA_INSPECT 2>/dev/null || iptables -F SURICATA_INSPECT
+iptables -A SURICATA_INSPECT -j NFQUEUE --queue-num 0 --queue-bypass
+iptables -I FORWARD 1 -j SURICATA_INSPECT
 
-# Autorizar SSH para o router se originado na rede interna ou na VPN Gateway
-iptables -A INPUT -p tcp -s $NET_INT --dport 22 -j ACCEPT
-iptables -A INPUT -p tcp -s $IP_VPN_GW --dport 22 -j ACCEPT
+#
+# 6. PROTEGER O ROUTER (INPUT / OUTPUT)
+#
+# Requisito: DROP tudo excepto:
+#   - DNS para servidores externos (resolucao de nomes do proprio router)
+#   - SSH da rede interna ou do vpn-gw
 
-# ==============================================================================
-# 5. COMUNICACOES DIRETAS (SEM NAT) -> FORWARD
-# ==============================================================================
-# DNS (Resolucao de nomes do dns server para a Internet e sincronizacao)
-iptables -A FORWARD -p udp -s $IP_DNS --dport 53 -j ACCEPT
-iptables -A FORWARD -p tcp -s $IP_DNS --dport 53 -j ACCEPT
-iptables -A FORWARD -p tcp -s $IP_DNS -d $IP_DNS2 --dport 53 -j ACCEPT
-iptables -A FORWARD -p tcp -s $IP_DNS2 -d $IP_DNS --dport 53 -j ACCEPT
+# --- INPUT: SSH para o router ---
+# Da rede interna (qualquer host)
+iptables -A INPUT -i $IF_INT -p tcp -s $NET_INT --dport 22 -j ACCEPT
+# Do gateway VPN (na DMZ)
+iptables -A INPUT -i $IF_DMZ -p tcp -s $IP_VPN_GW --dport 22 -j ACCEPT
 
-# SMTP para o servidor smtp
-iptables -A FORWARD -p tcp -d $IP_SMTP --dport 25 -j ACCEPT
+# --- OUTPUT: DNS ---
+# Para servidores externos (resolucao de nomes do router para o exterior)
+iptables -A OUTPUT -o $IF_EXT -p udp --dport 53 -j ACCEPT
+iptables -A OUTPUT -o $IF_EXT -p tcp --dport 53 -j ACCEPT
+# Para o servidor DNS interno na DMZ (caso o router use o dns interno)
+iptables -A OUTPUT -o $IF_DMZ -p udp -d $IP_DNS --dport 53 -j ACCEPT
+iptables -A OUTPUT -o $IF_DMZ -p tcp -d $IP_DNS --dport 53 -j ACCEPT
 
-# POP e IMAP para o mail server (Portas 110/995 POP, 143/993 IMAP)
-iptables -A FORWARD -p tcp -d $IP_MAIL -m multiport --dports 110,995,143,993 -j ACCEPT
+# --- OUTPUT: HTTP/HTTPS para actualizacoes do sistema e suricata-update ---
+iptables -A OUTPUT -o $IF_EXT -p tcp -m multiport --dports 80,443 -j ACCEPT
 
-# HTTP e HTTPS para o www server
-iptables -A FORWARD -p tcp -d $IP_WWW -m multiport --dports 80,443 -j ACCEPT
+#
+# 7. DNAT — conexoes externas para o IP do router redirecionadas
+#    para servidores internos (NAT de destino, PREROUTING)
+#
+# Requisito:
+#   - FTP (activo e passivo) → ftp server (rede interna)
+#   - SSH → datastore, mas so de eden ou dns2
 
-# OpenVPN para o vpn-gw server (Por defeito porta UDP 1194)
-iptables -A FORWARD -p udp -d $IP_VPN_GW --dport 1194 -j ACCEPT
+# --- DNAT: FTP → ftp server na rede interna ---
+# O modulo nf_conntrack_ftp trata automaticamente as portas de dados
+# para FTP activo (porta 20) e passivo (portas altas), criando
+# entradas RELATED que sao cobertas pela regra ESTABLISHED,RELATED.
+iptables -t nat -A PREROUTING -i $IF_EXT -p tcp --dport 21 \
+    -j DNAT --to-destination $IP_FTP:21
 
-# Clientes VPN para a Rede Interna (Assumindo que o vpn-gw faz SNAT)
-iptables -A FORWARD -s $IP_VPN_GW -d $NET_INT -j ACCEPT
+# --- DNAT: SSH → datastore, apenas de eden ou dns2 ---
+iptables -t nat -A PREROUTING -i $IF_EXT -p tcp -s $IP_EDEN \
+    --dport 22 -j DNAT --to-destination $IP_DATASTORE:22
+iptables -t nat -A PREROUTING -i $IF_EXT -p tcp -s $IP_DNS2 \
+    --dport 22 -j DNAT --to-destination $IP_DATASTORE:22
 
-# ==============================================================================
-# 6. LIGACOES DO EXTERIOR PARA O ROUTER (DNAT)
-# ==============================================================================
-# FTP (Activo e Passivo) para o servidor ftp interno
-iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT --dport 21 -j DNAT --to-destination $IP_FTP
-iptables -A FORWARD -p tcp -d $IP_FTP --dport 21 -j ACCEPT
-# (O modulo nf_conntrack_ftp carregado no inicio trata das portas de dados dinâmicas)
+#
+# 8. FORWARD — comunicacoes directas entre redes (sem NAT)
+#
+# Nota: o ESTABLISHED,RELATED da seccao 4 cobre todas as respostas,
+# por isso so e necessario permitir o sentido de inicio de cada ligacao.
 
-# SSH para o datastore, mas APENAS se originado no eden ou dns2
-iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT -s $IP_EDEN --dport 22 -j DNAT --to-destination $IP_DATASTORE
-iptables -t nat -A PREROUTING -p tcp -d $IP_ROUTER_EXT -s $IP_DNS2 --dport 22 -j DNAT --to-destination $IP_DATASTORE
-iptables -A FORWARD -p tcp -d $IP_DATASTORE --dport 22 -j ACCEPT
+# --- a) DNS: clientes (rede interna) → dns server (DMZ) ---
+iptables -A FORWARD -i $IF_INT -o $IF_DMZ \
+    -p udp -d $IP_DNS --dport 53 -j ACCEPT
+iptables -A FORWARD -i $IF_INT -o $IF_DMZ \
+    -p tcp -d $IP_DNS --dport 53 -j ACCEPT
 
-# ==============================================================================
-# 7. COMUNICACOES DA REDE INTERNA PARA O EXTERIOR (SNAT)
-# ==============================================================================
-# Mascarar os pacotes da rede interna a sair para a Internet (NAT)
-iptables -t nat -A POSTROUTING -s $NET_INT -o $IF_EXT -j SNAT --to-source $IP_ROUTER_EXT
+# --- b) DNS: dns server → Internet (resolucao recursiva) ---
+iptables -A FORWARD -i $IF_DMZ -o $IF_EXT \
+    -p udp -s $IP_DNS --dport 53 -j ACCEPT
+iptables -A FORWARD -i $IF_DMZ -o $IF_EXT \
+    -p tcp -s $IP_DNS --dport 53 -j ACCEPT
 
-# Autorizar os pacotes a atravessar o router (FORWARD) para os servicos pedidos
-iptables -A FORWARD -s $NET_INT -o $IF_EXT -p udp --dport 53 -j ACCEPT
-iptables -A FORWARD -s $NET_INT -o $IF_EXT -p tcp -m multiport --dports 53,80,443,22,21 -j ACCEPT
+# --- c) Sincronizacao de zonas DNS: dns (DMZ) ↔ dns2 (Internet) ---
+# dns → dns2 (transferencia de zona iniciada pelo dns interno)
+iptables -A FORWARD -i $IF_DMZ -o $IF_EXT \
+    -p tcp -s $IP_DNS -d $IP_DNS2 --dport 53 -j ACCEPT
+# dns2 → dns (transferencia de zona iniciada pelo dns2 externo)
+iptables -A FORWARD -i $IF_EXT -o $IF_DMZ \
+    -p tcp -s $IP_DNS2 -d $IP_DNS --dport 53 -j ACCEPT
 
-echo "Configuracao de Firewall e NAT concluida!"
+# --- d) SMTP: ligacoes ao smtp server ---
+# Do exterior (Internet) → smtp server (recepcao de correio)
+iptables -A FORWARD -i $IF_EXT -o $IF_DMZ \
+    -p tcp -d $IP_SMTP --dport 25 -j ACCEPT
+# Da rede interna → smtp server (envio de correio pelos utilizadores internos)
+iptables -A FORWARD -i $IF_INT -o $IF_DMZ \
+    -p tcp -d $IP_SMTP --dport 25 -j ACCEPT
+# smtp server → exterior (entrega de correio para servidores externos)
+iptables -A FORWARD -i $IF_DMZ -o $IF_EXT \
+    -p tcp -s $IP_SMTP --dport 25 -j ACCEPT
+
+# --- e) POP3/IMAP: ligacoes ao mail server ---
+# Do exterior
+iptables -A FORWARD -i $IF_EXT -o $IF_DMZ \
+    -p tcp -d $IP_MAIL -m multiport --dports 110,143,993,995 -j ACCEPT
+# Da rede interna
+iptables -A FORWARD -i $IF_INT -o $IF_DMZ \
+    -p tcp -d $IP_MAIL -m multiport --dports 110,143,993,995 -j ACCEPT
+
+# --- f) HTTP/HTTPS: ligacoes ao www server ---
+# Do exterior
+iptables -A FORWARD -i $IF_EXT -o $IF_DMZ \
+    -p tcp -d $IP_WWW -m multiport --dports 80,443 -j ACCEPT
+# Da rede interna
+iptables -A FORWARD -i $IF_INT -o $IF_DMZ \
+    -p tcp -d $IP_WWW -m multiport --dports 80,443 -j ACCEPT
+
+# --- g) OpenVPN: exterior → vpn-gw (DMZ) ---
+iptables -A FORWARD -i $IF_EXT -o $IF_DMZ \
+    -p udp -d $IP_VPN_GW --dport 1194 -j ACCEPT
+
+# --- h) Clientes VPN → rede interna (via vpn-gw com MASQUERADE) ---
+# O vpn-gw faz SNAT/MASQUERADE para os clientes VPN, por isso
+# o trafego chega ao router com source = IP_VPN_GW.
+# Os requisitos dizem "todos os servicos da rede interna".
+iptables -A FORWARD -i $IF_DMZ -o $IF_INT \
+    -s $IP_VPN_GW -j ACCEPT
+
+# --- i) FTP externo → ftp server na rede interna (via DNAT seccao 7) ---
+iptables -A FORWARD -i $IF_EXT -o $IF_INT \
+    -p tcp -d $IP_FTP --dport 21 -j ACCEPT
+
+# --- j) SSH externo (eden/dns2) → datastore (via DNAT seccao 7) ---
+iptables -A FORWARD -i $IF_EXT -o $IF_INT \
+    -p tcp -s $IP_EDEN -d $IP_DATASTORE --dport 22 -j ACCEPT
+iptables -A FORWARD -i $IF_EXT -o $IF_INT \
+    -p tcp -s $IP_DNS2 -d $IP_DATASTORE --dport 22 -j ACCEPT
+
+#
+# 9. FORWARD — rede interna para o exterior (com NAT, seccao 10)
+#
+# Requisito: DNS, HTTP, HTTPS, SSH e FTP (activo e passivo)
+
+# DNS
+iptables -A FORWARD -i $IF_INT -o $IF_EXT \
+    -p udp --dport 53 -j ACCEPT
+iptables -A FORWARD -i $IF_INT -o $IF_EXT \
+    -p tcp --dport 53 -j ACCEPT
+
+# HTTP, HTTPS e SSH
+iptables -A FORWARD -i $IF_INT -o $IF_EXT \
+    -p tcp -m multiport --dports 80,443,22 -j ACCEPT
+
+# FTP (activo e passivo — nf_conntrack_ftp trata as portas de dados via RELATED)
+iptables -A FORWARD -i $IF_INT -o $IF_EXT \
+    -p tcp --dport 21 -j ACCEPT
+
+#
+# 10. NAT — SNAT para a rede interna sair para a Internet
+#
+# Nota: a DMZ usa IPs publicos reais (23.214.219.x) e NAO precisa de SNAT.
+# O trafego da DMZ para o exterior sai com o IP real de cada servidor,
+# o que e necessario para SMTP (SPF/PTR), DNS e outros protocolos.
+# Apenas a rede interna (192.168.10.0/24) precisa de SNAT.
+iptables -t nat -A POSTROUTING -s $NET_INT -o $IF_EXT \
+    -j SNAT --to-source $IP_ROUTER_EXT
+
+echo ""
+echo "Configuracao de Firewall concluida!"
+echo ""
+echo "=== FILTER ==="
+iptables -L -n -v --line-numbers
+echo ""
+echo "=== NAT ==="
+iptables -t nat -L -n -v
