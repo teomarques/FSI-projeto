@@ -2,155 +2,142 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
-<title>FSI 2025/2026 – PA#3 – Relatório Fases 1 e 2</title>
+<title>Relatório Assignment #3 – Fundamentos de Segurança Informática</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 36px; line-height: 1.5; color: #222; font-size: 14px; }
-  h1 { color: #003366; border-bottom: 3px solid #003366; padding-bottom: 6px; font-size: 18px; }
-  h2 { color: #005599; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-top: 28px; font-size: 15px; }
-  h3 { color: #0077aa; margin-top: 16px; font-size: 14px; }
-  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
-  th { background: #003366; color: white; padding: 6px 10px; text-align: left; }
-  td { border: 1px solid #ccc; padding: 5px 10px; }
-  tr:nth-child(even) { background: #f5f5f5; }
-  .placeholder { background: #fffbe6; border: 2px dashed #f0a500; padding: 8px 12px; margin: 8px 0; border-radius: 4px; color: #8a6000; font-style: italic; font-size: 13px; }
-  .vc { background: #ffd6d6; border-left: 4px solid #cc0000; padding: 5px 10px; margin: 5px 0; }
-  .vh { background: #ffe8cc; border-left: 4px solid #e67300; padding: 5px 10px; margin: 5px 0; }
-  .vm { background: #fff3cc; border-left: 4px solid #e6b800; padding: 5px 10px; margin: 5px 0; }
-  .vl { background: #e8f5e9; border-left: 4px solid #388e3c; padding: 5px 10px; margin: 5px 0; }
-  .vi { background: #e3f2fd; border-left: 4px solid #1976d2; padding: 5px 10px; margin: 5px 0; }
-  .na { background: #f5f5f5; border-left: 4px solid #999; padding: 5px 10px; margin: 5px 0; }
-  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 12px; }
-  pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 8px 0; }
-  .blocked { color: #cc0000; font-weight: bold; }
-  .allowed { color: #2e7d32; font-weight: bold; }
-  .partial { color: #b8860b; font-weight: bold; }
-  figure { margin: 10px 0; text-align: center; }
-  figure img { max-width: 100%; border: 1px solid #ccc; border-radius: 3px; }
-  figcaption { font-size: 12px; color: #555; font-style: italic; margin-top: 4px; }
-  .img-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  body { font-family: "Times New Roman", Times, serif; margin: 60px 80px; line-height: 1.45; color: #000; font-size: 12pt; text-align: justify; }
+  h1 { font-size: 16pt; font-weight: bold; margin-top: 28px; }
+  h2 { font-size: 13pt; font-weight: bold; margin-top: 22px; }
+  h3 { font-size: 12pt; font-weight: bold; margin-top: 16px; }
+  p { margin: 8px 0; text-indent: 24px; }
+  ul { margin: 6px 0 6px 18px; padding-left: 18px; }
+  li { margin: 3px 0; }
+  table { border-collapse: collapse; margin: 8px 0; font-size: 11pt; }
+  th, td { border: 1px solid #444; padding: 3px 8px; text-align: left; }
+  th { background: #e8e8e8; }
+  code { font-family: "Courier New", monospace; font-size: 10.5pt; }
+  pre { font-family: "Courier New", monospace; font-size: 10pt; background: #f4f4f4; border: 1px solid #ccc; padding: 6px 10px; white-space: pre-wrap; }
+  figure { margin: 10px 0; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 95%; border: 1px solid #888; }
+  figcaption { font-size: 10pt; font-style: italic; margin-top: 3px; }
+  .img-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .img-row figure { flex: 1; min-width: 280px; }
+  .capa { text-align: center; margin-top: 120px; }
+  .capa h1 { font-size: 18pt; font-weight: normal; border: none; margin-bottom: 80px; }
+  .capa .autores { margin-top: 60px; }
+  .capa .autores p { text-indent: 0; }
 </style>
 </head>
 <body>
-<h1>FSI 2025/2026 – Practical Assignment #3 – Relatório de Segurança Web – Fases 1 e 2</h1>
-<table>
-  <tr><th>Aplicação</th><td>OWASP Juice Shop v17.x (http://192.168.100.20:3000)</td><th>Tipo de teste</th><td>Black-box</td></tr>
-  <tr><th>Ferramentas</th><td>OWASP ZAP 2.16.0, Firefox, curl</td><th>Data</th><td>Maio 2026</td></tr>
-</table>
-<h2>1. Introdução</h2>
-<p>Este relatório documenta os testes de segurança realizados sobre o OWASP Juice Shop, seguindo o OWASP WSTG v4.2. A Fase 1 testa a aplicação diretamente; a Fase 2 repete os mesmos testes com um WAF (Apache + ModSecurity + OWASP CRS) a proteger o servidor.</p>
-<h2>2. Arquitetura</h2>
-<table>
-  <tr><th>VM</th><th>Nome</th><th>IP</th><th>SO</th><th>Função</th></tr>
-  <tr><td>1</td><td>client-vm</td><td>192.168.100.10</td><td>CentOS 9</td><td>Cliente / Testes (ZAP 2.16.0, Firefox)</td></tr>
-  <tr><td>2</td><td>juiceshop-server</td><td>192.168.100.20</td><td>CentOS 9 + Docker</td><td>Servidor alvo (Juice Shop porta 3000)</td></tr>
-  <tr><td>3</td><td>waf-server</td><td>192.168.100.30</td><td>CentOS 9</td><td>WAF – Apache2 + ModSecurity (Fase 2)</td></tr>
-</table>
-<p><strong>Cenário 1 (Fase 1):</strong> client-vm → juiceshop-server:3000 | <strong>Cenário 2 (Fase 2):</strong> client-vm → waf-server:80 → juiceshop-server:3000</p>
-<div class="placeholder">[Colocar diagrama de arquitectura – Cenários 1 e 2]</div>
-<h2>3. Testes WSTG – Fase 1</h2>
-<p>Testes efetuados contra <code>http://192.168.100.20:3000</code>. Scan ZAP com política <strong>FSI-Full-Scan</strong> (Threshold: Low, Strength: High). Scan autenticado em 22/05/2026 com <code>admin@juice-sh.op</code>.</p>
-<div class="img-row">
-  <figure><img src="imgs/scan-policy.png" alt="Scan Policy FSI-Full-Scan"><figcaption>Fig. 1 – Política de scan FSI-Full-Scan (Threshold: Low, Strength: High)</figcaption></figure>
-  <figure><img src="imgs/addons-1.png" alt="ZAP Add-ons instalados"><figcaption>Fig. 2 – Add-ons ZAP 2.16.0 instalados (Active scanner rules, Ajax Spider, Directory List, DOM XSS, Forced Browse, Fuzzer, Passive scanner rules, Reveal)</figcaption></figure>
+
+<div class="capa">
+  <h1>Relatório Assignment #3 – Fundamentos de Segurança Informática</h1>
+  <div class="autores">
+    <p>Realizado por:</p>
+    <p>Gustavo Roberto &nbsp;&nbsp;&nbsp; Teodoro Maques</p>
+    <p>2023215017 &nbsp;&nbsp;&nbsp; 2023211717</p>
+  </div>
 </div>
-<h3>3.1 WSTG-INFO – Information Gathering</h3>
-<div class="vm"><strong>[WSTG-INFO] Divulgação de Tecnologias:</strong> A aplicação expõe <code>Express 4.22.1</code>, <code>SQLite</code> e <code>Angular</code> em cabeçalhos e mensagens de erro. Comunicação sobre HTTP simples (sem HTTPS).</div>
-<div class="vm"><strong>[WSTG-INFO] Private IP Disclosure (1 inst.):</strong> Endereços IP internos divulgados em respostas.</div>
-<figure><img src="imgs/zap-alerts-list.png" alt="Alertas ZAP" style="max-width:420px"><figcaption>Fig. 3 – Painel de Alertas do ZAP (27 alertas) com SQL Injection – SQLite, CSP, CORS, Session ID, Application Error, Full Path, Private IP Disclosure entre outros</figcaption></figure>
-<h3>3.2 WSTG-CONF – Configuration and Deployment Management</h3>
-<div class="vh"><strong>[WSTG-CONF-05] CORS Wildcard (1803+ inst.):</strong> <code>Access-Control-Allow-Origin: *</code> em todas as respostas — qualquer domínio pode fazer pedidos cross-origin.</div>
-<div class="vm"><strong>[WSTG-CONF-12] CSP Wildcard / CSP Ausente:</strong> Política CSP com diretivas wildcard (6 inst.) e ausente em várias páginas. Não oferece proteção contra XSS.</div>
-<div class="vm"><strong>[WSTG-CONF] Missing Anti-clickjacking Header (35 inst.):</strong> <code>X-Frame-Options</code> ausente — vulnerável a clickjacking.</div>
-<div class="vm"><strong>[WSTG-CONF-04] Hidden File Found (4 inst., scan autenticado):</strong> Ficheiros sensíveis acessíveis detetados com acesso autenticado.</div>
-<h3>3.3 WSTG-IDNT – Identity Management</h3>
-<div class="vm"><strong>[WSTG-IDNT-01] Enumeração de Utilizadores:</strong> O painel <code>/#/administration</code> expõe todos os emails registados (admin@juice-sh.op, jim@juice-sh.op, bender@juice-sh.op, e outros 7) após autenticação como administrador.</div>
-<figure><img src="imgs/admin-panel-users.png" alt="Painel administração"><figcaption>Fig. 4 – Painel <code>/#/administration</code>: lista completa de emails de utilizadores e comentários expostos</figcaption></figure>
-<h3>3.4 WSTG-ATHN – Authentication Testing</h3>
-<p>Fuzz attack ao <code>POST /rest/user/login</code> com ZAP Fuzzer.</p>
-<table>
-  <tr><th>Email</th><th>Payloads testados</th><th>Resultado</th></tr>
-  <tr><td>test@test.com</td><td>admin123, password, admin, 123456, password123, P@ssw0rd</td><td>401 Unauthorized (todos)</td></tr>
-  <tr><td><strong>admin@juice-sh.op</strong></td><td><strong>admin123</strong></td><td style="color:darkred;font-weight:bold">200 OK – Login bem-sucedido</td></tr>
-  <tr><td>admin@juice-sh.op</td><td>Outros payloads</td><td>401 Unauthorized</td></tr>
-</table>
-<div class="vc"><strong>[WSTG-ATHN-07] Password Fraca do Administrador:</strong> Conta <code>admin@juice-sh.op</code> com password <code>admin123</code> descoberta por force brute. CVSS: Crítico.</div>
+
+<h1>1. Descrição das Configurações e Implementação da Arquitetura</h1>
+
+<p>A infraestrutura foi montada em VMware com três máquinas virtuais CentOS 9 ligadas pelo LAN Segment <em>FSI-Network</em>, isolando o ambiente do exterior. O objetivo do trabalho dividiu-se em duas fases: na Fase 1 foram realizados testes de segurança ao OWASP Juice Shop seguindo o guia OWASP WSTG v4.2; na Fase 2 foi colocado um Web Application Firewall (Apache + ModSecurity + OWASP CRS) em frente da aplicação e os mesmos testes foram repetidos para avaliar a eficácia da proteção.</p>
+
+<h2>1.1. Topologia de Rede</h2>
+
+<p>A rede interna opera no segmento 192.168.100.0/24 com a seguinte distribuição:</p>
+<ul>
+  <li><strong>VM 1 (client-vm):</strong> 192.168.100.10. Máquina de testes com OWASP ZAP 2.16.0 e Firefox configurado com o proxy do ZAP.</li>
+  <li><strong>VM 2 (juiceshop-server):</strong> 192.168.100.20. Aloja o contentor Docker <code>bkimminich/juice-shop</code> a expor a aplicação na porta 3000.</li>
+  <li><strong>VM 3 (waf-server):</strong> 192.168.100.30. Servidor Apache com ModSecurity e OWASP CRS v3.3.5, utilizado na Fase 2 como proxy reverso para a VM 2.</li>
+</ul>
+
+<p>Na Fase 1 o cliente comunica diretamente com <code>192.168.100.20:3000</code>; na Fase 2 todo o tráfego passa primeiro pela VM 3 (<code>192.168.100.30:80</code>), que reencaminha para o JuiceShop após inspeção pelo ModSecurity.</p>
+
+<h2>1.2. Configuração do WAF (VM 3)</h2>
+
+<p>Para que o Apache funcionasse como proxy reverso e barreira de inspeção, foi criado o ficheiro <code>/etc/httpd/conf.d/juiceshop-waf.conf</code> com um VirtualHost a reencaminhar todos os pedidos para o JuiceShop e a forçar três cabeçalhos de segurança (X-Frame-Options, X-Content-Type-Options e X-XSS-Protection). O motor ModSecurity foi ativado em <code>/etc/httpd/conf.d/mod_security.conf</code> (<code>SecRuleEngine On</code> e <code>SecRequestBodyAccess On</code>) e foi adicionada uma regra customizada (<code>id:900001</code>) que força o uso do processador JSON sempre que o cabeçalho <code>Content-Type</code> é <code>application/json</code> — passo necessário porque o JuiceShop envia o login como JSON e, sem este detalhe, o CRS não inspecionava o corpo do pedido.</p>
+
+<p>As regras de deteção foram ativadas a partir do OWASP Core Rule Set v3.3.5 instalado em <code>/etc/httpd/modsecurity.d/</code>. Foram ligadas em particular as regras <code>REQUEST-942-APPLICATION-ATTACK-SQLI.conf</code> (deteção de SQL Injection) e <code>REQUEST-949-BLOCKING-EVALUATION.conf</code> (avaliação final do anomaly score e bloqueio do pedido).</p>
+
+<h1>2. Testes WSTG ao OWASP Juice Shop – Fase 1</h1>
+
+<p>Os testes foram efetuados sobre <code>http://192.168.100.20:3000</code> com o OWASP ZAP 2.16.0 (add-ons Active scanner rules, Ajax Spider, Directory List, DOM XSS, Forced Browse, Fuzzer, Passive scanner rules e Reveal). Foi criada uma política de scan personalizada designada <em>FSI-Full-Scan</em> com <em>Threshold: Low</em> e <em>Strength: High</em>, de forma a maximizar a sensibilidade da deteção. Em 22/05/2026 foi ainda lançado um Active Scan autenticado com a conta <code>admin@juice-sh.op</code> através do método JSON-based authentication do ZAP.</p>
+
 <div class="img-row">
-  <figure><img src="imgs/fuzzer-test-config.png" alt="Fuzzer test@test.com config"><figcaption>Fig. 5 – Configuração do Fuzzer para <code>test@test.com</code></figcaption></figure>
-  <figure><img src="imgs/fuzzer-test-results.png" alt="Fuzzer test@test.com resultados"><figcaption>Fig. 6 – Resultados: todos 401 Unauthorized (conta inexistente)</figcaption></figure>
+  <figure><img src="imgs/scan-policy.png" alt="Scan Policy FSI-Full-Scan"><figcaption>Fig. 1 – Política de scan FSI-Full-Scan utilizada no ZAP.</figcaption></figure>
+  <figure><img src="imgs/addons-1.png" alt="ZAP Add-ons"><figcaption>Fig. 2 – Add-ons do ZAP 2.16.0 instalados.</figcaption></figure>
 </div>
+
+<h2>2.1. Recolha de Informação e Configurações Expostas</h2>
+
+<p>Logo nos primeiros pedidos verificou-se que a aplicação comunica em HTTP simples e revela detalhes da sua pilha tecnológica: cabeçalhos e mensagens de erro identificam <code>Express 4.22.1</code>, base de dados <code>SQLite</code> e front-end Angular, e em algumas respostas surgem caminhos internos do servidor e endereços IP privados. Ao nível de configuração, o JuiceShop devolve <code>Access-Control-Allow-Origin: *</code> em todas as respostas (1803 instâncias), não define <code>Content-Security-Policy</code> (16 instâncias) e omite o cabeçalho <code>X-Frame-Options</code> (35 instâncias), o que o torna vulnerável a CORS abusivo, XSS e clickjacking. O scan autenticado revelou ainda quatro ficheiros escondidos no servidor.</p>
+
+<figure><img src="imgs/zap-alerts-list.png" alt="Alertas ZAP" style="max-width:80%"><figcaption>Fig. 3 – Painel de alertas do ZAP após o scan automático (27 tipos de alerta).</figcaption></figure>
+
+<h2>2.2. Gestão de Identidade e Autenticação</h2>
+
+<p>O painel <code>/#/administration</code> expõe a lista completa de utilizadores registados (10 emails, incluindo <code>admin@juice-sh.op</code>, <code>jim@juice-sh.op</code> e <code>bender@juice-sh.op</code>) assim que se entra com uma conta com privilégios. Para avaliar a robustez da autenticação foi utilizado o Fuzzer do ZAP contra <code>POST /rest/user/login</code>, com uma lista de passwords comuns. O teste contra a conta inexistente <code>test@test.com</code> devolveu sempre 401 Unauthorized; o teste contra <code>admin@juice-sh.op</code> devolveu 200 OK exatamente no payload <code>admin123</code> (resposta com 799 bytes contendo o token de sessão), o que confirma que a conta de administração tem uma password trivial.</p>
+
+<figure><img src="imgs/admin-panel-users.png" alt="Painel administração"><figcaption>Fig. 4 – Painel <code>/#/administration</code> com a lista de utilizadores.</figcaption></figure>
+
 <div class="img-row">
-  <figure><img src="imgs/fuzzer-admin-config.png" alt="Fuzzer admin config"><figcaption>Fig. 7 – Configuração do Fuzzer para <code>admin@juice-sh.op</code></figcaption></figure>
-  <figure><img src="imgs/fuzzer-admin-results.png" alt="Fuzzer admin resultados"><figcaption>Fig. 8 – Resultado: <strong>200 OK</strong> (799 bytes) na linha do payload <code>admin123</code></figcaption></figure>
+  <figure><img src="imgs/fuzzer-test-config.png" alt="Fuzzer config"><figcaption>Fig. 5 – Configuração do Fuzzer para <code>test@test.com</code>.</figcaption></figure>
+  <figure><img src="imgs/fuzzer-test-results.png" alt="Fuzzer resultados"><figcaption>Fig. 6 – Resultados: todos 401 Unauthorized.</figcaption></figure>
 </div>
-<figure><img src="imgs/login-admin-success.png" alt="Login admin bem-sucedido"><figcaption>Fig. 9 – Login bem-sucedido como <code>admin@juice-sh.op</code> com password <code>admin123</code></figcaption></figure>
-<h3>3.5 WSTG-ATHZ – Authorization Testing</h3>
-<div class="vc"><strong>[WSTG-ATHZ-02] Broken Access Control – Painel de Administração:</strong> <code>/#/administration</code> expõe lista completa de utilizadores, comentários e permite eliminação. Acessível a qualquer administrador autenticado.</div>
-<div class="vh"><strong>[WSTG-ATHZ-01] IDOR – Baskets com IDs Sequenciais:</strong> <code>/rest/basket/1</code>, <code>/rest/basket/2</code> retornam 401 sem token mas expõem IDs sequenciais. Com token válido o acesso seria possível.</div>
-<figure><img src="imgs/admin-search-page.png" alt="Sessão admin" style="max-width:600px"><figcaption>Fig. 10 – Sessão autenticada como <code>admin@juice-sh.op</code> com acesso ao menu de administração e produtos</figcaption></figure>
-<h3>3.6 WSTG-SESS – Session Management</h3>
-<div class="vm"><strong>[WSTG-SESS-04] Session ID in URL Rewrite (153 inst.):</strong> Token de sessão transmitido via URL — exposto em logs, histórico do browser e cabeçalho Referer.</div>
-<h3>3.7 WSTG-INPV – Input Validation</h3>
-<div class="vc"><strong>[WSTG-INPV-05] SQL Injection – Login Bypass:</strong> Payload <code>' OR 1=1--</code> no campo email autentica como administrador sem password. RDBMS: SQLite. CVSS: Crítico.</div>
-<pre>POST /rest/user/login  |  {"email":"' OR 1=1--","password":"test"}  →  200 OK (admin login)</pre>
-<div class="vm"><strong>[WSTG-INPV-01] DOM XSS (2 inst.):</strong> Uso de funções JavaScript perigosas (<code>eval()</code>, <code>innerHTML</code>) detetado.</div>
-<figure><img src="imgs/sqli-login-form.png" alt="Login com payload SQLi" style="max-width:600px"><figcaption>Fig. 11 – Formulário de login com payload <code>' OR 1=1--</code> no campo email — autenticação bem-sucedida como administrador</figcaption></figure>
-<h3>3.8 WSTG-ERRH – Error Handling</h3>
-<div class="vm"><strong>[WSTG-ERRH-01] Application Error Disclosure (6 inst.) + Full Path Disclosure (12 inst.):</strong> Erros expõem <code>Express 4.22.1</code>, tipo de BD (SQLite) e caminhos internos do servidor.</div>
-<h3>3.9 WSTG-CRYP / WSTG-BUSL – Criptografia / Lógica de Negócio</h3>
-<div class="na">Não aplicável — comunicação HTTP (sem TLS) e lógica de negócio fora do âmbito, conforme enunciado.</div>
-<h3>3.10 WSTG-CLNT – Client Side Testing</h3>
-<div class="vm"><strong>[WSTG-CLNT] Site Isolation / Feature Policy:</strong> Cabeçalhos <code>Cross-Origin-Opener-Policy</code> e <code>Permissions-Policy</code> ausentes ou deprecados (1699 inst.).</div>
-<h3>3.11 Active Scan Autenticado (22/05/2026, 12:03)</h3>
-<p>Scan autenticado como <code>admin@juice-sh.op</code> (JSON-based auth). Relatório completo: <em>scan-report-fase1-final.html</em>.</p>
-<table>
-  <tr><th>Tipo de Alerta</th><th>Risco</th><th>Inst.</th><th>WSTG</th></tr>
-  <tr><td><strong>SQL Injection</strong></td><td style="color:darkred">High</td><td>1</td><td>WSTG-INPV-05</td></tr>
-  <tr><td><strong>SQL Injection – SQLite</strong></td><td style="color:darkred">High</td><td>2</td><td>WSTG-INPV-05</td></tr>
-  <tr><td>Content Security Policy Header Not Set</td><td style="color:darkorange">Medium</td><td>16</td><td>WSTG-CONF-12</td></tr>
-  <tr><td>Cross-Domain Misconfiguration (CORS)</td><td style="color:darkorange">Medium</td><td>37</td><td>WSTG-CONF-05</td></tr>
-  <tr><td>Hidden File Found</td><td style="color:darkorange">Medium</td><td>4</td><td>WSTG-CONF-04</td></tr>
-  <tr><td>Missing Anti-clickjacking Header</td><td style="color:darkorange">Medium</td><td>11</td><td>WSTG-CONF</td></tr>
-  <tr><td>Session ID in URL Rewrite</td><td style="color:darkorange">Medium</td><td>39</td><td>WSTG-SESS-04</td></tr>
-  <tr><td>Private IP Disclosure</td><td style="color:green">Low</td><td>1</td><td>WSTG-INFO</td></tr>
-  <tr><td>Timestamp Disclosure – Unix</td><td style="color:green">Low</td><td>18</td><td>WSTG-INFO</td></tr>
-  <tr><td>X-Content-Type-Options Header Missing</td><td style="color:green">Low</td><td>39</td><td>WSTG-CONF</td></tr>
-  <tr><td>Information Disclosure – Suspicious Comments</td><td style="color:#1976d2">Info</td><td>33</td><td>WSTG-INFO</td></tr>
-  <tr><td>Session Management Response Identified</td><td style="color:#1976d2">Info</td><td>717</td><td>WSTG-SESS</td></tr>
-  <tr><td>User Agent Fuzzer</td><td style="color:#1976d2">Info</td><td>516</td><td>–</td></tr>
-</table>
-<figure><img src="imgs/active-scan-config.png" alt="Active Scan config" style="max-width:520px"><figcaption>Fig. 12 – Configuração do Active Scan autenticado (Context: Default Context, User: admin)</figcaption></figure>
-<h3>3.12 Resumo de Vulnerabilidades – Fase 1 (18 vulnerabilidades)</h3>
+
+<div class="img-row">
+  <figure><img src="imgs/fuzzer-admin-config.png" alt="Fuzzer admin config"><figcaption>Fig. 7 – Fuzzer aplicado a <code>admin@juice-sh.op</code>.</figcaption></figure>
+  <figure><img src="imgs/fuzzer-admin-results.png" alt="Fuzzer admin resultados"><figcaption>Fig. 8 – Linha com <code>admin123</code>: 200 OK (799 bytes).</figcaption></figure>
+</div>
+
+<figure><img src="imgs/login-admin-success.png" alt="Login admin" style="max-width:70%"><figcaption>Fig. 9 – Login bem-sucedido com <code>admin@juice-sh.op</code> / <code>admin123</code>.</figcaption></figure>
+
+<h2>2.3. Autorização, Sessão e Validação de Input</h2>
+
+<p>Confirmada a posse de uma conta de administrador, o painel <code>/#/administration</code> permite consultar todos os utilizadores e respetivos comentários e até apagá-los, evidenciando uma falha grave de controlo de acesso. As baskets de utilizadores estão acessíveis em <code>/rest/basket/&lt;id&gt;</code> com identificadores sequenciais, o que abre porta a IDOR. Já a nível de sessão, observou-se que o token aparece em URLs (153 instâncias), o que o expõe em logs, histórico e <code>Referer</code>.</p>
+
+<p>A vulnerabilidade mais grave está, no entanto, na validação de input do endpoint de login. O payload <code>' OR 1=1--</code> colocado no campo <em>email</em> obtém uma resposta 200 OK e o respetivo token de administrador, confirmando uma <em>SQL Injection</em> que permite contornar completamente a autenticação. O ZAP detetou ainda duas instâncias de uso de funções JavaScript perigosas (<code>eval()</code>, <code>innerHTML</code>) que podem permitir DOM XSS.</p>
+
+<figure><img src="imgs/admin-search-page.png" alt="Sessão admin" style="max-width:75%"><figcaption>Fig. 10 – Sessão autenticada como administrador com acesso ao menu.</figcaption></figure>
+
+<figure><img src="imgs/sqli-login-form.png" alt="SQLi login" style="max-width:75%"><figcaption>Fig. 11 – Formulário de login com payload <code>' OR 1=1--</code> bem-sucedido.</figcaption></figure>
+
+<h2>2.4. Resumo das Vulnerabilidades Encontradas</h2>
+
+<p>Ao todo identificámos 18 vulnerabilidades em 9 das 11 categorias do WSTG (WSTG-CRYP e WSTG-BUSL ficam fora do âmbito, dado que a comunicação é em HTTP simples e a lógica de negócio não é exigida). As três vulnerabilidades mais graves — todas críticas — são o SQL Injection no login, a password trivial do administrador e o painel de administração aberto a qualquer conta com permissões. Seguem-se vários problemas de configuração (CORS wildcard, CSP ausente, falta de <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code> e cabeçalhos de Site Isolation), exposição de tecnologia e caminhos internos nas mensagens de erro e o token de sessão em URL.</p>
+
+<figure><img src="imgs/active-scan-config.png" alt="Active Scan" style="max-width:70%"><figcaption>Fig. 12 – Configuração do Active Scan autenticado no ZAP.</figcaption></figure>
+
 <table>
   <tr><th>#</th><th>Vulnerabilidade</th><th>WSTG</th><th>Severidade</th></tr>
-  <tr><td>1</td><td>SQL Injection – Login Bypass (<code>' OR 1=1--</code>)</td><td>WSTG-INPV-05</td><td style="color:darkred;font-weight:bold">Crítico</td></tr>
-  <tr><td>2</td><td>Password Fraca do Administrador (<code>admin123</code>)</td><td>WSTG-ATHN-07</td><td style="color:darkred;font-weight:bold">Crítico</td></tr>
-  <tr><td>3</td><td>Broken Access Control – Painel de Administração</td><td>WSTG-ATHZ-02</td><td style="color:darkred;font-weight:bold">Crítico</td></tr>
-  <tr><td>4</td><td>CORS Wildcard (<code>Access-Control-Allow-Origin: *</code>)</td><td>WSTG-CONF-05</td><td style="color:darkorange;font-weight:bold">Alto</td></tr>
-  <tr><td>5</td><td>Information Disclosure – Emails de Utilizadores</td><td>WSTG-IDNT-01</td><td style="color:darkorange;font-weight:bold">Alto</td></tr>
-  <tr><td>6</td><td>IDOR – API Baskets com IDs Sequenciais</td><td>WSTG-ATHZ-01</td><td style="color:darkorange;font-weight:bold">Alto</td></tr>
-  <tr><td>7</td><td>Application Error Disclosure + Full Path Disclosure</td><td>WSTG-ERRH-01</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>8</td><td>CSP Wildcard / CSP Ausente</td><td>WSTG-CONF-12</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>9</td><td>Missing Anti-clickjacking Header</td><td>WSTG-CONF</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>10</td><td>Session ID in URL Rewrite</td><td>WSTG-SESS-04</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>11</td><td>DOM XSS – Funções JavaScript Perigosas</td><td>WSTG-INPV-01</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>12</td><td>Private IP Disclosure</td><td>WSTG-INFO</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>13</td><td>Hidden File Found (scan autenticado)</td><td>WSTG-CONF-04</td><td style="color:#b8860b;font-weight:bold">Médio</td></tr>
-  <tr><td>14</td><td>Timestamp Disclosure – Unix</td><td>WSTG-INFO</td><td style="color:green">Baixo</td></tr>
-  <tr><td>15</td><td>X-Content-Type-Options Header Missing</td><td>WSTG-CONF</td><td style="color:green">Baixo</td></tr>
-  <tr><td>16</td><td>Site Isolation / Feature Policy ausente</td><td>WSTG-CLNT</td><td style="color:green">Baixo/Info</td></tr>
-  <tr><td>17</td><td>Information Disclosure – Suspicious Comments</td><td>WSTG-INFO</td><td style="color:#1976d2">Informativo</td></tr>
-  <tr><td>18</td><td>Divulgação de Tecnologias Internas (Express, SQLite)</td><td>WSTG-INFO</td><td style="color:#1976d2">Informativo</td></tr>
+  <tr><td>1</td><td>SQL Injection no login (<code>' OR 1=1--</code>)</td><td>WSTG-INPV-05</td><td>Crítico</td></tr>
+  <tr><td>2</td><td>Password fraca do administrador (<code>admin123</code>)</td><td>WSTG-ATHN-07</td><td>Crítico</td></tr>
+  <tr><td>3</td><td>Painel de administração exposto</td><td>WSTG-ATHZ-02</td><td>Crítico</td></tr>
+  <tr><td>4</td><td>CORS wildcard (<code>Access-Control-Allow-Origin: *</code>)</td><td>WSTG-CONF-05</td><td>Alto</td></tr>
+  <tr><td>5</td><td>Enumeração de utilizadores</td><td>WSTG-IDNT-01</td><td>Alto</td></tr>
+  <tr><td>6</td><td>IDOR em <code>/rest/basket/&lt;id&gt;</code></td><td>WSTG-ATHZ-01</td><td>Alto</td></tr>
+  <tr><td>7</td><td>Application + Full Path Disclosure</td><td>WSTG-ERRH-01</td><td>Médio</td></tr>
+  <tr><td>8</td><td>CSP ausente ou wildcard</td><td>WSTG-CONF-12</td><td>Médio</td></tr>
+  <tr><td>9</td><td>Falta de <code>X-Frame-Options</code></td><td>WSTG-CONF</td><td>Médio</td></tr>
+  <tr><td>10</td><td>Session ID em URL</td><td>WSTG-SESS-04</td><td>Médio</td></tr>
+  <tr><td>11</td><td>DOM XSS – funções JS perigosas</td><td>WSTG-INPV-01</td><td>Médio</td></tr>
+  <tr><td>12</td><td>Private IP Disclosure</td><td>WSTG-INFO</td><td>Médio</td></tr>
+  <tr><td>13</td><td>Hidden File Found (autenticado)</td><td>WSTG-CONF-04</td><td>Médio</td></tr>
+  <tr><td>14</td><td>Timestamp Disclosure (Unix)</td><td>WSTG-INFO</td><td>Baixo</td></tr>
+  <tr><td>15</td><td>Falta de <code>X-Content-Type-Options</code></td><td>WSTG-CONF</td><td>Baixo</td></tr>
+  <tr><td>16</td><td>Falta de Site Isolation / Permissions-Policy</td><td>WSTG-CLNT</td><td>Baixo</td></tr>
+  <tr><td>17</td><td>Suspicious Comments no código-fonte</td><td>WSTG-INFO</td><td>Informativo</td></tr>
+  <tr><td>18</td><td>Divulgação de Express/SQLite</td><td>WSTG-INFO</td><td>Informativo</td></tr>
 </table>
-<h2>4. Web Application Security Firewall – Fase 2</h2>
-<p>WAF configurado na VM3 (192.168.100.30) como proxy reverso para o JuiceShop. Todos os testes da Fase 1 repetidos contra <code>http://192.168.100.30</code>. Scan ZAP Fase 2: 22/05/2026 às 17:07. Relatório: <em>reportAttackFase2.html</em>.</p>
-<h3>4.1 Configuração do WAF</h3>
-<table>
-  <tr><th>Componente</th><th>Versão</th><th>Função</th></tr>
-  <tr><td>Apache HTTP Server</td><td>CentOS 9</td><td>Servidor web e proxy reverso</td></tr>
-  <tr><td>ModSecurity</td><td>mod_security</td><td>Motor WAF – inspeção de pedidos HTTP</td></tr>
-  <tr><td>OWASP CRS</td><td>mod_security_crs v3.3.5</td><td>Regras de deteção de ataques</td></tr>
-</table>
+
+<h1>3. Testes ao WAF e Comparação – Fase 2</h1>
+
+<p>Repetiram-se na Fase 2 os mesmos testes da Fase 1, desta vez sobre <code>http://192.168.100.30</code>. O Active Scan do ZAP foi corrido a 22/05/2026 às 17:07 e o relatório completo foi gravado em <em>reportAttackFase2.html</em>.</p>
+
+<h2>3.1. Bloqueio do SQL Injection</h2>
+
+<p>O resultado mais relevante é o bloqueio efetivo do SQL Injection de login: o mesmo pedido que na Fase 1 devolvia 200 OK passa agora a devolver <strong>403 Forbidden</strong>. A análise do <code>modsec_audit.log</code> mostra que o pedido é classificado pelas regras da família 942 (SQL Injection), com <em>SQLI anomaly score = 8</em>, ultrapassando o limiar definido pela 949 e ativando o bloqueio. Foi necessário ajustar o processamento JSON do ModSecurity (regra <code>id:900001</code>) porque o JuiceShop envia o login como <code>application/json</code> e, sem essa configuração, o CRS estava a ignorar o corpo do pedido.</p>
+
 <pre>
 # /etc/httpd/conf.d/juiceshop-waf.conf
 &lt;VirtualHost *:80&gt;
@@ -160,80 +147,38 @@
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-XSS-Protection "1; mode=block"
 &lt;/VirtualHost&gt;
-
-# mod_security.conf: SecRuleEngine On | SecRequestBodyAccess On
-# Regra JSON (id:900001): ctl:requestBodyProcessor=JSON (Content-Type: application/json)
-# CRS activo: REQUEST-942-APPLICATION-ATTACK-SQLI.conf + REQUEST-949-BLOCKING-EVALUATION.conf
 </pre>
-<div class="placeholder">[Screenshot: mod_security.conf com SecRuleEngine On + pasta activated_rules]</div>
-<h3>4.2 Resultado Principal – SQL Injection Bloqueado</h3>
-<div class="vc" style="border-left-color:#2e7d32;background:#d4edda;">
-  <strong>[WSTG-INPV-05] SQL Injection Login Bypass — <span class="blocked">BLOQUEADO ✓</span></strong><br>
-  Payload <code>' OR 1=1--</code> retorna <strong>403 Forbidden</strong>. ModSecurity: anomaly score SQLI=8 (REQUEST-942 + REQUEST-949).<br>
-  Configuração adicional necessária: <code>requestBodyProcessor=JSON</code> para inspeção de corpos <code>application/json</code>.<br>
-  <em>Fase 1: 200 OK (admin) → Fase 2: 403 Forbidden</em>
-</div>
-<div class="placeholder">[Screenshot: 403 Forbidden no browser ao tentar ' OR 1=1-- via 192.168.100.30]</div>
-<div class="placeholder">[Screenshot: modsec_audit.log mostrando bloqueio SQL Injection]</div>
-<h3>4.3 Fuzz Attack via WAF</h3>
-<p>ZAP Fuzzer contra <code>POST http://192.168.100.30/rest/user/login</code>. WAF <strong>não bloqueia força bruta</strong> (sem rate-limiting no CRS base).</p>
+
+<h2>3.2. Limites do WAF</h2>
+
+<p>O WAF não substitui correções na aplicação. O fuzz attack ao endpoint de login continua a funcionar — o ModSecurity não tem rate-limiting no CRS base, pelo que o payload <code>admin123</code> volta a devolver 200 OK e a entregar o token de admin. Também não há nada que o WAF possa fazer contra a enumeração de utilizadores ou o IDOR: o JuiceShop é uma SPA Angular, os identificadores estão no fragmento <code>#</code> da URL e por isso não chegam ao servidor. Os cabeçalhos enviados pela aplicação (<code>Access-Control-Allow-Origin: *</code>, falta de CSP, token na URL) também passam intactos, porque o ModSecurity inspeciona pedidos mas não filtra respostas.</p>
+
+<p>Ao mesmo tempo, o WAF introduziu dois alertas novos que o ZAP detetou. A diretiva <code>Header always set X-Frame-Options</code> aplica-se a respostas que o próprio JuiceShop já trazia com o mesmo cabeçalho, resultando em 880 instâncias de <em>Multiple X-Frame-Options</em>. E o Apache passa a anunciar a sua própria versão em <code>Server:</code>, gerando 24 637 instâncias de divulgação de versão. Ambos são corrigíveis com <code>Header always unset</code> antes do <code>Header set</code> e com <code>ServerTokens Prod</code>/<code>ServerSignature Off</code> no <code>httpd.conf</code>.</p>
+
+<h2>3.3. Comparação Fase 1 vs. Fase 2</h2>
+
 <table>
-  <tr><th>Email</th><th>Payload (password)</th><th>Código</th><th>WAF Bloqueou?</th></tr>
-  <tr><td>test@test.com</td><td>admin123, password, 123456, letmein, qwerty, test</td><td>401 (todos)</td><td class="allowed">NÃO</td></tr>
-  <tr><td><strong>admin@juice-sh.op</strong></td><td><strong>admin123</strong></td><td><strong>200 OK</strong> (799 bytes)</td><td class="allowed"><strong>NÃO</strong></td></tr>
-  <tr><td>admin@juice-sh.op</td><td>password, 123456, letmein, qwerty, test</td><td>401 (todos)</td><td class="allowed">NÃO</td></tr>
+  <tr><th>Vulnerabilidade</th><th>Fase 1</th><th>Fase 2 (via WAF)</th><th>Resultado</th></tr>
+  <tr><td>SQL Injection no login</td><td>200 OK (admin)</td><td>403 Forbidden</td><td>Bloqueado</td></tr>
+  <tr><td>SQL Injection noutros endpoints</td><td>2 inst.</td><td>5 inst.</td><td>Parcial</td></tr>
+  <tr><td>Password fraca (<code>admin123</code>)</td><td>200 OK</td><td>200 OK</td><td>Não bloqueado</td></tr>
+  <tr><td>Painel <code>/#/administration</code></td><td>Acessível</td><td>Acessível</td><td>Não bloqueado</td></tr>
+  <tr><td>CORS wildcard</td><td>980 inst.</td><td>980 inst.</td><td>Não bloqueado</td></tr>
+  <tr><td>CSP ausente</td><td>Presente</td><td>16 339 inst.</td><td>Não bloqueado</td></tr>
+  <tr><td>Falta de <code>X-Frame-Options</code></td><td>35 inst.</td><td>Adicionado (com duplicado)</td><td>Mitigado / efeito lateral</td></tr>
+  <tr><td>Falta de <code>X-Content-Type-Options</code></td><td>39 inst.</td><td>Adicionado</td><td>Mitigado</td></tr>
+  <tr><td>Session ID em URL</td><td>153 inst.</td><td>15 942 inst.</td><td>Não bloqueado</td></tr>
+  <tr><td>Application Error Disclosure</td><td>6 inst.</td><td>7 inst.</td><td>Não bloqueado</td></tr>
+  <tr><td>Hidden File Found</td><td>4 inst.</td><td>8 inst.</td><td>Não bloqueado</td></tr>
+  <tr><td><em>Multiple X-Frame-Options</em> (novo)</td><td>—</td><td>880 inst.</td><td>Introduzido pelo WAF</td></tr>
+  <tr><td><em>Server Version Leakage</em> (Apache)</td><td>—</td><td>24 637 inst.</td><td>Introduzido pelo WAF</td></tr>
 </table>
-<div class="placeholder">[Screenshot: Fuzzer ZAP contra 192.168.100.30 – todos 401 / admin123 = 200 OK]</div>
-<h3>4.4 Resultados WSTG via WAF</h3>
-<table>
-  <tr><th>Categoria WSTG</th><th>Resultado Fase 2</th><th>Estado</th></tr>
-  <tr><td>WSTG-INFO – Divulgação de tecnologias</td><td>Cabeçalhos Express/SQLite persistem. Apache adiciona <code>Server:</code> com versão (24637 inst.)</td><td class="partial">NÃO MITIGADO</td></tr>
-  <tr><td>WSTG-CONF – CORS Wildcard</td><td>JuiceShop continua a enviar <code>Access-Control-Allow-Origin: *</code>; WAF não filtra respostas</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>WSTG-CONF – CSP Ausente</td><td>Persiste (16339 inst. no scan ZAP). WAF não injeta CSP</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>WSTG-CONF – Anti-clickjacking</td><td>WAF adiciona <code>X-Frame-Options: SAMEORIGIN</code>, mas JuiceShop também envia o mesmo → duplicado (880 inst.)</td><td class="partial">MITIGADO (duplicado introduzido)</td></tr>
-  <tr><td>WSTG-CONF – X-Content-Type-Options</td><td>WAF adiciona <code>nosniff</code> corretamente</td><td class="blocked">MITIGADO ✓</td></tr>
-  <tr><td>WSTG-IDNT – Enumeração de utilizadores</td><td>Rotas Angular (<code>#</code>) nunca chegam ao servidor; WAF não pode inspecionar</td><td class="allowed">N/A – Lógica aplicacional</td></tr>
-  <tr><td>WSTG-ATHN – Password fraca</td><td>WAF não distingue autenticação legítima de força bruta sem rate-limiting</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>WSTG-ATHZ – Broken Access Control</td><td>Fragmento <code>#</code> nunca chega ao servidor; WAF não pode bloquear</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>WSTG-SESS – Session ID in URL</td><td>Comportamento gerado pela aplicação; WAF retransmite sem alterar URLs (15942 inst.)</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>WSTG-INPV – SQL Injection (login)</td><td>403 Forbidden – bloqueado pelo ModSecurity + CRS (SQLI score = 8)</td><td class="blocked">BLOQUEADO ✓</td></tr>
-  <tr><td>WSTG-INPV – SQL Injection (outros endpoints)</td><td>ZAP detetou 5 inst. via WAF (1 genérico + 4 SQLite) – CRS não cobre todos os vetores REST</td><td class="partial">PARCIALMENTE BLOQUEADO</td></tr>
-  <tr><td>WSTG-ERRH – Error Disclosure</td><td>SQLi bloqueado reduz alguns erros, mas erros 401 continuam a expor versão Express (7 inst.)</td><td class="partial">PARCIALMENTE MITIGADO</td></tr>
-  <tr><td>WSTG-CRYP / WSTG-BUSL / WSTG-CLNT</td><td>N/A (sem HTTPS; fora do âmbito; WAF adiciona X-XSS-Protection)</td><td class="partial">N/A / PARCIAL</td></tr>
-</table>
-<div class="placeholder">[Screenshot: cabeçalhos HTTP via DevTools (Firefox → 192.168.100.30) com X-Frame-Options, X-Content-Type-Options, X-XSS-Protection]</div>
-<h3>4.5 Tabela Comparativa – Scan ZAP Fase 1 vs. Fase 2</h3>
-<p>Scan Fase 2: 22/05/2026, 17:07 contra <code>http://192.168.100.30</code>.</p>
-<table>
-  <tr><th>Vulnerabilidade</th><th>WSTG</th><th>Fase 1</th><th>Fase 2 (WAF)</th><th>WAF</th></tr>
-  <tr><td>SQL Injection – Login Bypass</td><td>WSTG-INPV-05</td><td>200 OK – admin</td><td>403 Forbidden</td><td class="blocked">BLOQUEADO ✓</td></tr>
-  <tr><td>SQL Injection – Outros endpoints</td><td>WSTG-INPV-05</td><td>2 inst.</td><td>5 inst.</td><td class="partial">PARCIAL</td></tr>
-  <tr><td>Password Fraca (admin123)</td><td>WSTG-ATHN-07</td><td>200 OK</td><td>200 OK</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>Broken Access Control (/#/administration)</td><td>WSTG-ATHZ-02</td><td>Acessível</td><td>Acessível</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>CORS Wildcard</td><td>WSTG-CONF-05</td><td>980+ inst.</td><td>980 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>CSP Header Not Set</td><td>WSTG-CONF-12</td><td>Presente</td><td>16339 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>Missing Anti-clickjacking</td><td>WSTG-CONF</td><td>35 inst.</td><td>880 inst. (duplicado)</td><td class="partial">MITIGADO (duplicado)</td></tr>
-  <tr><td>X-Content-Type-Options ausente</td><td>WSTG-CONF</td><td>39 inst.</td><td>Adicionado pelo WAF</td><td class="blocked">MITIGADO ✓</td></tr>
-  <tr><td>Session ID in URL Rewrite</td><td>WSTG-SESS-04</td><td>153 inst.</td><td>15942 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>Application Error Disclosure</td><td>WSTG-ERRH-01</td><td>6 inst.</td><td>7 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td>Hidden File Found</td><td>WSTG-CONF-04</td><td>4 inst.</td><td>8 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-  <tr><td><strong>Multiple X-Frame-Options (NOVO)</strong></td><td>WSTG-CONF</td><td>–</td><td>880 inst.</td><td class="partial">INTRODUZIDO PELO WAF</td></tr>
-  <tr><td><strong>Server Version Leakage Apache (NOVO)</strong></td><td>WSTG-INFO</td><td>–</td><td>24637 inst.</td><td class="partial">INTRODUZIDO PELO WAF</td></tr>
-  <tr><td>Timestamp Disclosure – Unix</td><td>WSTG-INFO</td><td>18 inst.</td><td>1776 inst.</td><td class="allowed">NÃO BLOQUEADO</td></tr>
-</table>
-<div class="placeholder">[Screenshot: tabela de alertas do reportAttackFase2.html]</div>
-<h2>5. Conclusões</h2>
-<h3>Fase 1</h3>
-<ul>
-  <li>O Juice Shop apresenta <strong>3 vulnerabilidades críticas</strong>: SQL Injection no login, password de admin trivial (<code>admin123</code>) e painel de administração exposto.</li>
-  <li>Foram identificadas <strong>18 vulnerabilidades</strong> em 9 das 11 categorias WSTG, com ZAP (scan automático, scan autenticado, fuzzer) e testes manuais.</li>
-</ul>
-<h3>Fase 2</h3>
-<ul>
-  <li>O WAF (Apache + ModSecurity + OWASP CRS v3.3.5) <strong>bloqueou com sucesso o SQL Injection de login bypass</strong> (403 Forbidden, SQLI anomaly score = 8). Foi necessária configuração adicional para inspeção de JSON (<code>requestBodyProcessor=JSON</code>).</li>
-  <li>O WAF <strong>não bloqueia</strong> vulnerabilidades de lógica aplicacional (passwords fracas, rotas Angular <code>/#/</code>, IDOR) — requerem correções na aplicação.</li>
-  <li>O WAF <strong>introduziu dois novos alertas</strong>: <em>Multiple X-Frame-Options</em> (cabeçalho duplicado, 880 inst.) e <em>Server Version Leakage</em> via Apache (24637 inst.) — corrigíveis com <code>Header always unset</code> e <code>ServerTokens Prod</code>.</li>
-  <li>O WAF é uma camada de defesa eficaz contra ataques de injeção HTTP, mas não substitui boas práticas de desenvolvimento seguro.</li>
-</ul>
+
+<h1>4. Conclusão</h1>
+
+<p>Na Fase 1 demonstrou-se que o OWASP Juice Shop é, como esperado, uma aplicação propositadamente vulnerável: foram encontradas 18 vulnerabilidades, três das quais críticas (SQL Injection no login, password trivial do administrador e painel de administração exposto). A combinação do ZAP (scan automático, scan autenticado e Fuzzer) com testes manuais foi suficiente para cobrir 9 das 11 categorias do WSTG.</p>
+
+<p>Na Fase 2 confirmou-se a utilidade e ao mesmo tempo os limites de um WAF. O Apache + ModSecurity + OWASP CRS v3.3.5 bloqueia eficazmente ataques de injeção HTTP (o SQL Injection de login passou a devolver 403) e permite acrescentar facilmente cabeçalhos de segurança que a aplicação não envia. Em contrapartida, não consegue resolver problemas de lógica aplicacional (passwords fracas, falhas de autorização, IDOR em SPAs Angular) e pode até introduzir novos alertas se a sua configuração não for cuidada (cabeçalhos duplicados, divulgação da versão do Apache). Um WAF é uma camada de defesa relevante, mas não substitui boas práticas de desenvolvimento seguro na própria aplicação.</p>
+
 </body>
 </html>
